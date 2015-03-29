@@ -28,15 +28,16 @@ public class ArchiveMaker {
 					zos.write(buffer);
 				zos.closeEntry();
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
+		} 
+                catch (IOException e) {
+		} 
+                finally {
 			try {
 				zos.flush();
 				zos.close();
 				System.out.println("Архивация прошла успешно!");
-			} catch (IOException e) {
-				e.printStackTrace();
+			} 
+                        catch (IOException e) {
 			}
 		}
 

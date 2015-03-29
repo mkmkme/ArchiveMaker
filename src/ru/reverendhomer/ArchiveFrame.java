@@ -4,7 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,9 +42,9 @@ public class ArchiveFrame extends JFrame {
 	/* Преобразование списка панелей в список файлов */
 	public static ArrayList<File> getFiles() {
 		List<File> paths = new ArrayList<>();
-		for (FileLine i : files) {
-			paths.add(new File(i.getPath()));
-		}
+                files.stream().forEach((i) -> {
+                    paths.add(new File(i.getPath()));
+                });
 		return (ArrayList<File>) paths;
 	}
 
@@ -54,7 +53,7 @@ public class ArchiveFrame extends JFrame {
 			SwingConstants.RIGHT);
 
 	/* Внутренний класс для панели файла */
-	class FileLine extends JComponent {
+	final class FileLine extends JComponent {
 		JTextField file;
 		JButton rmButton;
 		JPanel fileP; // Панель для flowLayout. Без неё строки "размажет" по размеру центра
@@ -77,25 +76,22 @@ public class ArchiveFrame extends JFrame {
 			fileP.add(file);
 			fileP.add(rmButton);
 			center.add(fileP);
-			rmButton.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					System.out.println("№ удаляемого элемента: " + id);
-					System.out.println(id + " " + files.get(id).getPath() + " удалён из очереди");
-					center.setVisible(false);
-					center.remove(id);
-					files.remove(id);
-					index = refreshID(files);
-					System.out.println("**********************************************************");
-					for (FileLine i: files) {
-						System.out.println("№" + i.id + ": " + i.file.getText());
-					}
-					System.out.println("**********************************************************");
-					System.out.println("Количество файлов в списке: " + index);
-					sbar.revalidate();
-					center.setVisible(true);
-				}
-			});
+			rmButton.addActionListener((ActionEvent e) -> {
+                            System.out.println("№ удаляемого элемента: " + id);
+                            System.out.println(id + " " + files.get(id).getPath() + " удалён из очереди");
+                            center.setVisible(false);
+                            center.remove(id);
+                            files.remove(id);
+                            index = refreshID(files);
+                            System.out.println("**********************************************************");
+                            files.stream().forEach((i) -> {
+                                System.out.println("№" + i.id + ": " + i.file.getText());
+                            });
+                            System.out.println("**********************************************************");
+                            System.out.println("Количество файлов в списке: " + index);
+                            sbar.revalidate();
+                            center.setVisible(true);
+                        });
 
 		}
 		
@@ -137,28 +133,17 @@ public class ArchiveFrame extends JFrame {
 		mb.add(helpm);
 		setJMenuBar(mb);
 
-		set.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				SwingUtilities.invokeLater(new SettingsRun());
-			}
-		});
+		set.addActionListener((ActionEvent arg0) -> {
+                    SwingUtilities.invokeLater(new SettingsRun());
+                });
 
-		exit.addActionListener(new ActionListener() {
+		exit.addActionListener((ActionEvent arg0) -> {
+                    System.exit(0);
+                });
 
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				System.exit(0);
-			}
-		});
-
-		about.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				SwingUtilities.invokeLater(new AboutRun());
-			}
-		});
+		about.addActionListener((ActionEvent arg0) -> {
+                    SwingUtilities.invokeLater(new AboutRun());
+                });
 
 	}
 
@@ -192,60 +177,46 @@ public class ArchiveFrame extends JFrame {
 		JPanel panAdd = new JPanel(new FlowLayout());
 		panAdd.add(addButton);
 		addButton.setPreferredSize(new Dimension(29, 29));
-		addButton.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				int ret = fchooser.showDialog(null, "Open file");
-				if (ret == JFileChooser.APPROVE_OPTION) {
-
-					FileLine fl = new FileLine(fchooser.getSelectedFile()
-							.getAbsolutePath(), index);
-					files.add(fl);
-					index++;
-					System.out.println(fchooser.getSelectedFile().getName() + " добавлен в очередь архивации");
-					System.out.println("Количество файлов в очереди: " + index);
-					center.setVisible(false);
-					center.add(fl);
-					center.revalidate();
-					sbar.revalidate();
-					center.setVisible(true);
-				}
-			}
-		});
+		addButton.addActionListener((ActionEvent arg0) -> {
+                    int ret = fchooser.showDialog(null, "Open file");
+                    if (ret == JFileChooser.APPROVE_OPTION) {
+                        
+                        FileLine fl = new FileLine(fchooser.getSelectedFile()
+                                .getAbsolutePath(), index);
+                        files.add(fl);
+                        index++;
+                        System.out.println(fchooser.getSelectedFile().getName() + " добавлен в очередь архивации");
+                        System.out.println("Количество файлов в очереди: " + index);
+                        center.setVisible(false);
+                        center.add(fl);
+                        center.revalidate();
+                        sbar.revalidate();
+                        center.setVisible(true);
+                    }
+                });
 		panel.add(top, BorderLayout.PAGE_START);
 		panel.add(centerPanel, BorderLayout.CENTER);
 		panel.add(panAdd, BorderLayout.LINE_END);
 		panel.add(copyr, BorderLayout.PAGE_END);
 
-		act.addActionListener(new ActionListener() {
+		act.addActionListener((ActionEvent arg0) -> {
+                    try {
+                        ArchiveMaker.makeArchive(output.getText(), getFiles());
+                        center.setVisible(false);
+                        output.setText("");
+                        center.removeAll();
+                        center.revalidate();
+                        center.setVisible(true);
+                    } catch (IOException e) {
+                    }
+                });
 
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				try {
-					ArchiveMaker.makeArchive(output.getText(), getFiles());
-					center.setVisible(false);
-					output.setText("");
-					center.removeAll();
-					center.revalidate();
-					center.setVisible(true);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		});
-
-		browse.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				int ret = fchooser.showDialog(null, "Save ZIP");
-				if (ret == JFileChooser.APPROVE_OPTION)
-					output.setText(fchooser.getSelectedFile().getAbsolutePath()
-							+ ".zip");
-			}
-
-		});
+		browse.addActionListener((ActionEvent arg0) -> {
+                    int ret = fchooser.showDialog(null, "Save ZIP");
+                    if (ret == JFileChooser.APPROVE_OPTION)
+                        output.setText(fchooser.getSelectedFile().getAbsolutePath()
+                                + ".zip");
+                });
 
 		return panel;
 	}
@@ -253,24 +224,20 @@ public class ArchiveFrame extends JFrame {
 	public static void main(String[] args) throws IOException {
 		if (args.length == 0) System.err.println("Usage: archive.jar -gui/list of files");
 		if (args[0].equals("-gui")) {
-			SwingUtilities.invokeLater(new Runnable() {
-				
-				@Override
-				public void run() {
-					ArchiveFrame af = new ArchiveFrame();
-					af.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-					af.pack();
-					af.setSize(500, 300);
-					af.setLocationRelativeTo(null);
-					af.setResizable(false);
-					af.setVisible(true);
-				}
-			});
+			SwingUtilities.invokeLater(() -> {
+                            ArchiveFrame af = new ArchiveFrame();
+                            af.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                            af.pack();
+                            af.setSize(500, 300);
+                            af.setLocationRelativeTo(null);
+                            af.setResizable(false);
+                            af.setVisible(true);
+                        });
 		} else {
 			List<File> fl = new ArrayList<>();
-			for (int i = 0; i < args.length; i++) {
-				fl.add(new File(args[i]));
-			}
+                        for (String arg : args) {
+                            fl.add(new File(arg));
+                        }
 			ArchiveMaker.makeArchive("output.zip", fl);
 		}
 	}
@@ -290,12 +257,9 @@ public class ArchiveFrame extends JFrame {
 		 Border border = BorderFactory.createEmptyBorder(20, 20, 20, 20);
 		 pnl.setBorder(border);
 		 
-		 but.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				label.setVisible(true);
-			}
-		});
+		 but.addActionListener((ActionEvent arg0) -> {
+                     label.setVisible(true);
+                 });
 		 
 		 frm.setContentPane(pnl);
 		 frm.pack();
