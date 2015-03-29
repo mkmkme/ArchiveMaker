@@ -4,9 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
-import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -30,33 +28,42 @@ import javax.swing.border.Border;
 
 @SuppressWarnings("serial")
 public class ArchiveFrame extends JFrame {
-	JFileChooser fchooser; 
+	private final JFileChooser afFileChooser= new JFileChooser(); 
 	/* Панели для центральной части окна, корневого окна, flowLayout и верхней части окна соответственно */
-	JPanel center, panel, centerPanel, top; 
-	JLabel name; // "Имя архива: "
-	JTextField output; // Путь к конечному архиву будет здесь
-	JButton act, browse; // Кнопка "Zip it!" и кнопка вызова fchooser соответственно
-	JScrollPane sbar;
-	static List<FileLine> files = new ArrayList<>();
+	private final JPanel afCenterPanel = new JPanel();
+        private final JPanel afRootPanel = new JPanel(new BorderLayout());
+        private final JPanel afFlowPanel = new JPanel(new FlowLayout());
+        private final JPanel afTopPanel = new JPanel();
+        // "Имя архива: "
+	private final JLabel afNameLabel = new JLabel("Name of archive:");
+        // Путь к конечному архиву будет здесь
+	private final JTextField afPath = new JTextField();
+        // Кнопка "Zip it!"
+	private final JButton afActionButton = new JButton("Zip file!");
+        //кнопка вызова fchooser
+        private final JButton afBrowseButton = new JButton("Browse");
+	private final JScrollPane afScrollBar = new JScrollPane(afCenterPanel);
+        private final ArchiveMaker afArchiveMaker;
+//	static List<FileLine> files = new ArrayList<>();
 
 	/* Преобразование списка панелей в список файлов */
-	public static ArrayList<File> getFiles() {
-		List<File> paths = new ArrayList<>();
-                files.stream().forEach((i) -> {
-                    paths.add(new File(i.getPath()));
-                });
-		return (ArrayList<File>) paths;
-	}
+//	public List<File> getFiles() {
+//		List<File> paths = new ArrayList<>();
+//                files.stream().forEach((i) -> {
+//                    paths.add(new File(i.getPath()));
+//                });
+//		return paths;
+//	}
 
-	static int index; // Присваеваемый индекс для каждого нового элемента списка панелей
-	static JLabel copyr = new JLabel("© Преподобный Гомер",
-			SwingConstants.RIGHT);
+	int index; // Присваеваемый индекс для каждого нового элемента списка панелей
+	private final JLabel copyr = new JLabel("© Преподобный Гомер", SwingConstants.RIGHT);
 
 	/* Внутренний класс для панели файла */
 	final class FileLine extends JComponent {
-		JTextField file;
-		JButton rmButton;
-		JPanel fileP; // Панель для flowLayout. Без неё строки "размажет" по размеру центра
+		private final JTextField flPath;
+		private final JButton flRemoveButton;
+                // Панель для flowLayout. Без неё строки "размажет" по размеру центра
+		private final JPanel flFlowLayout; 
 		int id;
 		
 		void setID(int nid) {
@@ -64,33 +71,38 @@ public class ArchiveFrame extends JFrame {
 		}
 
 		public FileLine(String path, final int id) {
-			fileP = new JPanel();
-			fileP.setLayout(new BoxLayout(fileP, BoxLayout.X_AXIS));
-			file = new JTextField(path);
-			file.setEditable(false);
-			ImageIcon removePic = new ImageIcon(this.getClass().getResource(
-					"/res/remove.png"));
-			rmButton = new JButton(removePic);
-			rmButton.setPreferredSize(new Dimension(29, 29)); // Размеры кнопки и изображения должны совпадать.
-			file.setPreferredSize(new Dimension(200, 20));
-			fileP.add(file);
-			fileP.add(rmButton);
-			center.add(fileP);
-			rmButton.addActionListener((ActionEvent e) -> {
+                        flFlowLayout = new JPanel();
+			flFlowLayout.setLayout(new BoxLayout(flFlowLayout, BoxLayout.X_AXIS));
+			flPath = new JTextField(path);
+			flPath.setEditable(false);
+			final ImageIcon removePic = new ImageIcon(
+                                this.getClass().getResource("/res/remove.png")
+                        );
+			flRemoveButton = new JButton(removePic);
+                        // Размеры кнопки и изображения должны совпадать.
+			flRemoveButton.setPreferredSize(new Dimension(29, 29));
+			flPath.setPreferredSize(new Dimension(200, 20));
+			flFlowLayout.add(flPath);
+			flFlowLayout.add(flRemoveButton);
+			afCenterPanel.add(flFlowLayout);
+			flRemoveButton.addActionListener((ActionEvent e) -> {
                             System.out.println("№ удаляемого элемента: " + id);
-                            System.out.println(id + " " + files.get(id).getPath() + " удалён из очереди");
-                            center.setVisible(false);
-                            center.remove(id);
-                            files.remove(id);
-                            index = refreshID(files);
-                            System.out.println("**********************************************************");
-                            files.stream().forEach((i) -> {
-                                System.out.println("№" + i.id + ": " + i.file.getText());
-                            });
-                            System.out.println("**********************************************************");
-                            System.out.println("Количество файлов в списке: " + index);
-                            sbar.revalidate();
-                            center.setVisible(true);
+                            System.out.println(id + " " + flPath.getText() + " удалён из очереди");
+//                            afCenterPanel.setVisible(false);
+                            afArchiveMaker.removeFile(this.getPath());
+                            afCenterPanel.remove(flFlowLayout);
+                            afCenterPanel.revalidate();
+                            repaint();
+//                            files.remove(id);
+//                            index = refreshID(files);
+//                            System.out.println("**********************************************************");
+//                            files.stream().forEach((i) -> {
+//                                System.out.println("№" + i.id + ": " + i.file.getText());
+//                            });
+//                            System.out.println("**********************************************************");
+//                            System.out.println("Количество файлов в списке: " + index);
+                            afScrollBar.revalidate();
+//                            afCenterPanel.setVisible(true);
                         });
 
 		}
@@ -100,7 +112,7 @@ public class ArchiveFrame extends JFrame {
 			System.out.println("_____________________________________________________________");
 			for (FileLine i: list) {
 				i.setID(tmp);
-				System.out.println("№ элемента " + i.file.getText() + ": " + i.id);
+				System.out.println("№ элемента " + i.flPath.getText() + ": " + i.id);
 				tmp++;
 			}
 			System.out.println("_____________________________________________________________");
@@ -108,24 +120,30 @@ public class ArchiveFrame extends JFrame {
 		}
 
 		public String getPath() {
-			return file.getText();
+			return flPath.getText();
 		}
 
 	}
 
-	public ArchiveFrame() {
+	public ArchiveFrame(ArchiveMaker archiveMaker) {
 		super("Adolbe Zipler");
+                this.afArchiveMaker = archiveMaker;
+                
 		setLayout(new BorderLayout());
 		add(addWidgets(), BorderLayout.CENTER);
 		JMenuBar mb = new JMenuBar();
+                
 		JMenu filem = new JMenu("File");
 		JMenu helpm = new JMenu("Help");
+                
 		JMenuItem set = new JMenuItem("Settings");
 		JMenuItem exit = new JMenuItem("Exit");
 		JMenuItem about = new JMenuItem("About");
+                
 		ImageIcon icon = new ImageIcon(this.getClass().getResource(
 				"/res/icon.jpg"));
 		setIconImage(icon.getImage());
+                
 		filem.add(set);
 		filem.add(exit);
 		helpm.add(about);
@@ -148,28 +166,18 @@ public class ArchiveFrame extends JFrame {
 	}
 
 	private JComponent addWidgets() {
-		fchooser = new JFileChooser();
-		center = new JPanel();
-		panel = new JPanel(new BorderLayout());
-		centerPanel = new JPanel(new FlowLayout());
-		center.setLayout(new BoxLayout(center, BoxLayout.Y_AXIS));
-		sbar = new JScrollPane(center);
-		add(sbar, BorderLayout.LINE_END);
-		centerPanel.add(center);
+		afCenterPanel.setLayout(new BoxLayout(afCenterPanel, BoxLayout.Y_AXIS));
+		add(afScrollBar, BorderLayout.LINE_END);
+		afFlowPanel.add(afCenterPanel);
 
 		Border border = BorderFactory.createEmptyBorder(20, 20, 20, 20);
-		panel.setBorder(border);
+		afRootPanel.setBorder(border);
 
-		top = new JPanel();
-		name = new JLabel("Name of archive:");
-		output = new JTextField();
-		act = new JButton("Zip file!");
-		browse = new JButton("Browse");
-		top.setLayout(new BoxLayout(top, BoxLayout.X_AXIS));
-		top.add(name);
-		top.add(output);
-		top.add(browse);
-		top.add(act);
+		afTopPanel.setLayout(new BoxLayout(afTopPanel, BoxLayout.X_AXIS));
+		afTopPanel.add(afNameLabel);
+		afTopPanel.add(afPath);
+		afTopPanel.add(afBrowseButton);
+		afTopPanel.add(afActionButton);
 
 		ImageIcon addPic = new ImageIcon(this.getClass().getResource(
 				"/res/add.png"));
@@ -178,68 +186,58 @@ public class ArchiveFrame extends JFrame {
 		panAdd.add(addButton);
 		addButton.setPreferredSize(new Dimension(29, 29));
 		addButton.addActionListener((ActionEvent arg0) -> {
-                    int ret = fchooser.showDialog(null, "Open file");
-                    if (ret == JFileChooser.APPROVE_OPTION) {
-                        
-                        FileLine fl = new FileLine(fchooser.getSelectedFile()
-                                .getAbsolutePath(), index);
-                        files.add(fl);
-                        index++;
-                        System.out.println(fchooser.getSelectedFile().getName() + " добавлен в очередь архивации");
-                        System.out.println("Количество файлов в очереди: " + index);
-                        center.setVisible(false);
-                        center.add(fl);
-                        center.revalidate();
-                        sbar.revalidate();
-                        center.setVisible(true);
+                    int ret = afFileChooser.showDialog(null, "Open file");
+                    if (ret != JFileChooser.APPROVE_OPTION) {
+                        return;
                     }
+                    String path = afFileChooser.getSelectedFile().getAbsolutePath();
+                    FileLine fl = new FileLine(path, index);
+                    afArchiveMaker.addFile(path);
+//                    files.add(fl);
+                    index++;
+                    System.out.println(
+                            afFileChooser.getSelectedFile().getName() 
+                            + " добавлен в очередь архивации"
+                    );
+                    System.out.println(
+                            "Количество файлов в очереди: " 
+                                    + index
+                    );
+                    afCenterPanel.setVisible(false);
+                    afCenterPanel.add(fl);
+                    afCenterPanel.revalidate();
+                    afScrollBar.revalidate();
+                    afCenterPanel.setVisible(true);
                 });
-		panel.add(top, BorderLayout.PAGE_START);
-		panel.add(centerPanel, BorderLayout.CENTER);
-		panel.add(panAdd, BorderLayout.LINE_END);
-		panel.add(copyr, BorderLayout.PAGE_END);
+		afRootPanel.add(afTopPanel, BorderLayout.PAGE_START);
+		afRootPanel.add(afFlowPanel, BorderLayout.CENTER);
+		afRootPanel.add(panAdd, BorderLayout.LINE_END);
+		afRootPanel.add(copyr, BorderLayout.PAGE_END);
 
-		act.addActionListener((ActionEvent arg0) -> {
+		afActionButton.addActionListener((ActionEvent arg0) -> {
                     try {
-                        ArchiveMaker.makeArchive(output.getText(), getFiles());
-                        center.setVisible(false);
-                        output.setText("");
-                        center.removeAll();
-                        center.revalidate();
-                        center.setVisible(true);
-                    } catch (IOException e) {
+                        afArchiveMaker.makeArchive();
+                        afCenterPanel.setVisible(false);
+                        afPath.setText("");
+                        afCenterPanel.removeAll();
+                        afCenterPanel.revalidate();
+                        afCenterPanel.setVisible(true);
+                    } 
+                    catch (IOException e) {
                     }
                 });
 
-		browse.addActionListener((ActionEvent arg0) -> {
-                    int ret = fchooser.showDialog(null, "Save ZIP");
-                    if (ret == JFileChooser.APPROVE_OPTION)
-                        output.setText(fchooser.getSelectedFile().getAbsolutePath()
-                                + ".zip");
+		afBrowseButton.addActionListener((ActionEvent arg0) -> {
+                    int ret = afFileChooser.showDialog(null, "Save ZIP");
+                    if (ret == JFileChooser.APPROVE_OPTION) {
+                        afPath.setText(
+                                afFileChooser.getSelectedFile().getAbsolutePath()
+                                + ".zip"
+                        );
+                    }
                 });
 
-		return panel;
-	}
-
-	public static void main(String[] args) throws IOException {
-		if (args.length == 0) System.err.println("Usage: archive.jar -gui/list of files");
-		if (args[0].equals("-gui")) {
-			SwingUtilities.invokeLater(() -> {
-                            ArchiveFrame af = new ArchiveFrame();
-                            af.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-                            af.pack();
-                            af.setSize(500, 300);
-                            af.setLocationRelativeTo(null);
-                            af.setResizable(false);
-                            af.setVisible(true);
-                        });
-		} else {
-			List<File> fl = new ArrayList<>();
-                        for (String arg : args) {
-                            fl.add(new File(arg));
-                        }
-			ArchiveMaker.makeArchive("output.zip", fl);
-		}
+		return afRootPanel;
 	}
 }
 
@@ -276,15 +274,18 @@ class AboutRun implements Runnable {
 		JFrame af = new JFrame("About");
 		JPanel ap = new JPanel(new BorderLayout());
 		JTextArea note = new JTextArea(
-				"Adolbe Zipler.\n"
-						+ "Архиватор с умопомрачительным интерфейсом\n"
-						+ " и невероятной функциональностью!\n"
-						+ "За такой не жалко отдать и 600 рублей в год!\n"
-						+ "Кстати, не забудьте приобрести Adolbe Zipler DeLuxe Edition!\n"
-						+ "Ещё больше пасхальных яиц и глупых шуток в одной программе!");
+                                  "Adolbe Zipler.\n"
+				+ "Архиватор с умопомрачительным интерфейсом\n"
+				+ " и невероятной функциональностью!\n"
+				+ "За такой не жалко отдать и 600 рублей в год!\n"
+				+ "Кстати, не забудьте приобрести Adolbe Zipler DeLuxe Edition!\n"
+				+ "Ещё больше пасхальных яиц и глупых шуток в одной программе!"
+                );
 		note.setEditable(false);
 		ap.add(note, BorderLayout.CENTER);
-		ap.add(ArchiveFrame.copyr, BorderLayout.PAGE_END);
+		ap.add(new JLabel(
+                        "© Преподобный Гомер",
+			SwingConstants.RIGHT), BorderLayout.PAGE_END);
 		af.setContentPane(ap);
 		af.pack();
 		af.setLocationRelativeTo(null);

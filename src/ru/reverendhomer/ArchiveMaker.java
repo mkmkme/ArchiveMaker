@@ -1,31 +1,59 @@
 package ru.reverendhomer;
 
-import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class ArchiveMaker {
 	private static final int BUFFER_SIZE = 1024;
-	static ZipOutputStream zos;
+        private final List<String> filePaths;
+        private final String archName;
+	private ZipOutputStream zos;
 
-	public static void makeArchive(String name, List<File> list) throws IOException {
-		zos = new ZipOutputStream(new FileOutputStream(name));
-		System.out.println("Имя ожидаемого архива: " + name);
-		List<File> fl = ArchiveFrame.getFiles();
-		FileInputStream fis;
+        public ArchiveMaker(String name) {
+            this.filePaths = new ArrayList<>();
+            this.archName = name;
+            try {
+                this.zos = new ZipOutputStream(new FileOutputStream(name));
+            } catch (FileNotFoundException ex) {
+            }
+        }
+
+        public ArchiveMaker(String name, List<String> files) {
+            this.filePaths = files;
+            this.archName = name;
+            try {
+                this.zos = new ZipOutputStream(new FileOutputStream(name));
+            } 
+            catch (FileNotFoundException ex) {
+            }
+        }
+
+        public void addFile(String name) {
+            this.filePaths.add(name);
+        }
+        
+        public void removeFile(String name) {
+            this.filePaths.removeIf(n -> n.compareTo(name) == 0);
+        }
+
+	public void makeArchive(/*String name, List<File> list*/) throws IOException {
+		System.out.println("Имя ожидаемого архива: " + this.archName);
 		byte[] buffer = new byte[BUFFER_SIZE];
 		try {
-			for (File i : fl) {
-				fis = new FileInputStream(i);
-				ZipEntry ze = new ZipEntry(i.getName());
-				System.out.println(i.getName() + " добавлен в архив");
+			for (String fileName : filePaths) {
+				FileInputStream fis = new FileInputStream(fileName);
+				ZipEntry ze = new ZipEntry(fileName);
+				System.out.println(fileName + " добавлен в архив");
 				zos.putNextEntry(ze);
-				while (fis.read(buffer) > 0)
+				while (fis.read(buffer) > 0) {
 					zos.write(buffer);
+                                }
 				zos.closeEntry();
 			}
 		} 
